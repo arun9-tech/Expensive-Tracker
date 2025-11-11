@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<!-- I've set data-theme="dark" by default. Remove it for light mode. -->
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://127.0.0.1:5500 http://localhost:8080 * chrome-devtools://*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <!-- Link to your new, single CSS file -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- =================================================================
+    AUTH SECTION (Login & Register)
+    ================================================================== -->
+    <div id="auth-section" class="auth-section">
+        <div class="auth-container card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Login</button>
+                <button class="auth-tab" data-tab="register">Register</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <h2>Welcome Back</h2>
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-input" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p id="login-error" class="error-message"></p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form hidden">
+                <h2>Create an Account</h2>
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" class="form-input" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+                <p id="register-error" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- =================================================================
+    MAIN APP DASHBOARD (Initially hidden)
+    ================================================================== -->
+    <div id="app" class="hidden">
+        <header class="header">
+            <nav class="navbar container">
+                <div class="logo">Expense Tracker</div>
+                <div class="user-info">
+                    <span id="welcome-message"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="main-content container">
+            <!-- Summary Cards -->
+            <section class="summary">
+                <div class="summary-cards">
+                    <div class="summary-card card">
+                        <h3>Total Balance</h3>
+                        <p id="total-balance">$0.00</p>
+                    </div>
+                    <div class="summary-card card">
+                        <h3>Total Income</h3>
+                        <p id="total-income" class="text-success">$0.00</p>
+                    </div>
+                    <div class="summary-card card">
+                        <h3>Total Expense</h3>
+                        <p id="total-expense" class="text-danger">$0.00</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Add Transaction -->
+            <section class="add-transaction card">
+                <h2>Add New Transaction</h2>
+                <form id="transaction-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="transaction-description">Description</label>
+                            <input type="text" id="transaction-description" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transaction-amount">Amount</label>
+                            <input type="number" id="transaction-amount" class="form-input" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transaction-type">Type</label>
+                            <select id="transaction-type" class="form-input" required>
+                                <option value="EXPENSE">Expense</option>
+                                <option value="INCOME">Income</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Transaction</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Transactions List -->
+            <section class="transactions card">
+                <h2>Recent Transactions</h2>
+                <div id="transactions-list" class="transactions-list">
+                    <!-- Transactions will be dynamically added here by JavaScript -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

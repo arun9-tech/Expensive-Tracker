@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80" # Map host port 3000 to container port 80 (Nginx)
+    container_name: expense-tracker-frontend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    container_name: expense-tracker-backend
+    environment:
+      # Use host.docker.internal to connect to MySQL running on your host machine
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/expense_tracker
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=your_password # IMPORTANT: Use your actual MySQL password here
+    # On Linux, you might need extra_hosts instead of relying on host.docker.internal
+    # extra_hosts:
+    #  - "host.docker.internal:host-gateway"
