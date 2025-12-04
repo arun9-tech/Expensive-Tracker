@@ -32,7 +32,10 @@ public class Transaction {
     @Column(nullable = false)
     private LocalDateTime date;
     
-    // Removed createdAt and updatedAt as they don't exist in the database
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+    
     @PrePersist
     protected void onCreate() {
         if (this.date == null) {

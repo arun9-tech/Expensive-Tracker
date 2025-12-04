@@ -3,8 +3,13 @@ package com.example.expensetracker.service;
 import com.example.expensetracker.dto.SummaryDTO;
 import com.example.expensetracker.entity.Transaction;
 import com.example.expensetracker.entity.TransactionType;
+import com.example.expensetracker.entity.User;
 import com.example.expensetracker.repository.TransactionRepository;
+import com.example.expensetracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,19 +25,24 @@ import java.util.Objects;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public TransactionService(TransactionRepository transactionRepository) {
+    public TransactionService(TransactionRepository transactionRepository, UserRepository userRepository) {
         this.transactionRepository = Objects.requireNonNull(transactionRepository, "TransactionRepository cannot be null");
+        this.userRepository = Objects.requireNonNull(userRepository, "UserRepository cannot be null");
     }
 
     public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
+        User currentUser = getCurrentUser();
+        return transactionRepository.findByUser(currentUser);
     }
 
     @Transactional
     public Transaction addTransaction(Transaction transaction) {
         Objects.requireNonNull(transaction, "Transaction cannot be null");
+        User currentUser = getCurrentUser();
+        transaction.setUser(currentUser);
         return transactionRepository.save(transaction);
     }
 
@@ -45,9 +55,17 @@ public class TransactionService {
         transactionRepository.deleteById(id);
     }
 
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+    }
+
     public SummaryDTO getSummary() {
-        BigDecimal totalIncome = transactionRepository.sumByType(TransactionType.INCOME);
-        BigDecimal totalExpense = transactionRepository.sumByType(TransactionType.EXPENSE);
+        User currentUser = getCurrentUser();
+        BigDecimal totalIncome = transactionRepository.sumByTypeAndUser(TransactionType.INCOME, currentUser);
+        BigDecimal totalExpense = transactionRepository.sumByTypeAndUser(TransactionType.EXPENSE, currentUser);
         BigDecimal balance = (totalIncome != null ? totalIncome : BigDecimal.ZERO)
                 .subtract(totalExpense != null ? totalExpense : BigDecimal.ZERO);
 
@@ -68,11 +86,12 @@ public class TransactionService {
 
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+        User currentUser = getCurrentUser();
 
-        BigDecimal totalIncome = transactionRepository.sumByTypeAndDateBetween(
-            TransactionType.INCOME, startDateTime, endDateTime);
-        BigDecimal totalExpense = transactionRepository.sumByTypeAndDateBetween(
-            TransactionType.EXPENSE, startDateTime, endDateTime);
+        BigDecimal totalIncome = transactionRepository.sumByTypeAndUserAndDateBetween(
+            TransactionType.INCOME, currentUser, startDateTime, endDateTime);
+        BigDecimal totalExpense = transactionRepository.sumByTypeAndUserAndDateBetween(
+            TransactionType.EXPENSE, currentUser, startDateTime, endDateTime);
             
         BigDecimal balance = (totalIncome != null ? totalIncome : BigDecimal.ZERO)
                 .subtract(totalExpense != null ? totalExpense : BigDecimal.ZERO);
@@ -88,6 +107,7 @@ public class TransactionService {
     public List<Transaction> getTransactionsByPeriod(LocalDate startDate, LocalDate endDate) {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
-        return transactionRepository.findByDateBetween(startDateTime, endDateTime);
+        User currentUser = getCurrentUser();
+        return transactionRepository.findByUserAndDateBetween(currentUser, startDateTime, endDateTime);
     }
 }

@@ -20,8 +20,7 @@ async function fetchWithAuth(url, options = {}) {
     try {
         const response = await fetch(url, {
             ...options,
-            headers,
-            credentials: 'include'
+            headers
         });
         
         // Handle unauthorized responses
@@ -40,7 +39,7 @@ async function fetchWithAuth(url, options = {}) {
 
 // API Configuration - Using proxy server
 // NEW (Correct)
-const API_BASE_URL = 'http://localhost:8080/api'; // <--- Add /api here
+const API_BASE_URL = 'http://localhost:8081/api'; // <--- Add /api here
 const AUTH_ENDPOINTS = {
     LOGIN: `${API_BASE_URL}/auth/signin`,
     REGISTER: `${API_BASE_URL}/auth/signup`,
@@ -152,19 +151,34 @@ async function handleRegister(e) {
     try {
         const response = await fetch(AUTH_ENDPOINTS.REGISTER, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+                username, 
+                email, 
+                password,
+                role: ['user']
+            }),
+            credentials: 'include' // Important for cookies/session
         });
         
         const data = await response.json();
         
-        if (!response.ok) throw new Error(data.message || 'Registration failed');
+        if (!response.ok) {
+            const errorMsg = data.message || 
+                           (data.errors ? Object.values(data.errors).join(' ') : 'Registration failed');
+            throw new Error(errorMsg);
+        }
         
+        // Clear form on success
+        e.target.reset();
         switchAuthTab('login');
         alert('Registration successful! Please login.');
         
     } catch (error) {
-        errorEl.textContent = error.message;
+        errorEl.textContent = error.message || 'Registration failed. Please try again.';
         console.error('Registration error:', error);
     }
 }

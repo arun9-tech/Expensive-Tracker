@@ -36,35 +36,49 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                                   @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         
+        String requestURI = request.getRequestURI();
+        logger.debug("Processing request to: {}", requestURI);
+        
         // Bypass JWT authentication for /api/auth/** endpoints
-        if (request.getRequestURI().startsWith("/api/auth")) {
+        if (requestURI.startsWith("/api/auth")) {
+            logger.debug("Skipping auth check for path: {}", requestURI);
             filterChain.doFilter(request, response);
             return;
         }
 
-        logger.debug("Processing request to: {}", request.getRequestURI());
-
         try {
             String jwt = parseJwt(request);
+            logger.debug("JWT token found: {}", jwt != null ? "[HIDDEN]" : "null");
 
-            // If a token is present and valid, authenticate the user
-            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                String username = jwtUtils.getUserNameFromJwtToken(jwt);
+            if (jwt != null) {
+                logger.debug("Validating JWT token");
+                boolean isValid = jwtUtils.validateJwtToken(jwt);
+                logger.debug("JWT token validation result: {}", isValid);
+                
+                if (isValid) {
+                    String username = jwtUtils.getUserNameFromJwtToken(jwt);
+                    logger.debug("Loading user details for username: {}", username);
+                    
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // Set the authentication in the security context
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.debug("Successfully authenticated user: {}", username);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.debug("Successfully authenticated user: {}", username);
+                } else {
+                    logger.warn("JWT token validation failed for request: {}", requestURI);
+                }
+            } else {
+                logger.warn("No JWT token found in request to: {}", requestURI);
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e.getMessage());
+            logger.error("Authentication error for request {}: {}", requestURI, e.getMessage(), e);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error: Unauthorized - " + e.getMessage());
+            return;
         }
 
         // Always continue the filter chain.
